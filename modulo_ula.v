@@ -1,0 +1,25 @@
+module ula (input [5:0] A, input [5:0] B, input [2:0] opcode, output reg [7:0] res_com_sinal)
+begin
+    
+    localparam ADD = 3'b001;
+    localparam ADDI = 3'b010;
+    localparam SUB = 3'b011;
+    localparam SUBI = 3'b100;
+    
+    always@(*) // executa se alguns dos inputs do módulo mudar (A, B ou opcode)
+
+    begin 
+    res_com_sinal = 8'd0;
+    if (opcode == ADD || opcode == ADDI)
+    begin
+    res_com_sinal = A + B;
+    end 
+    
+    else if (opcode == SUB || opcode == SUBI)
+    begin
+    res_com_sinal = A - B;
+    end 
+    end 
+
+endmodule
+
