@@ -19,6 +19,8 @@ reg sistema_ligado = 0;
 wire flag_ligar;
 wire flag_enviar;
 
+memoria banco_memoria(.clk(clk), )
+
 detector_botao detector_ligar (.clk(clk), .botao_agora(botao_ligar_agora), .flag_botao(flag_ligar));
 
 detector_botao detector_enviar(.clk(clk), .botao_agora(botao_enviar_agora), .flag_botao(flag_enviar));
@@ -91,9 +93,13 @@ end
 // Lógica das saídas 
 always@(posedge clk) begin
 
+// dúvida: precisa de um if para o estado desligado?
+
 if(estado == estado_ligado) begin 
-    // lógica de ace
+    // INSERIR lógica de ligar o lcd e colocar aqueles dados padrão
 end
+
+else if (estado == aguardando)
 end
 
 endmodule
