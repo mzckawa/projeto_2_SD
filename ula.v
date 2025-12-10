@@ -1,5 +1,4 @@
-module ula(input [5:0] A, input [5:0] B, input [2:0] opcode, output reg [7:0] res_com_sinal)
-begin
+module ula(input [7:0] A, input [7:0] B, input [2:0] opcode, output reg [6:0] res_com_sinal)
     
     localparam ADD = 3'b001;
     localparam ADDI = 3'b010;
