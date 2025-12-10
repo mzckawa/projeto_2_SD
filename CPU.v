@@ -1,225 +1,228 @@
-// arquivo para a FSM da CPU 
+module CPU (
+    input clk,
+    input botao_ligar_agora,
+    input botao_enviar_agora,
+    input [17:0] instrucao_completa,
 
-module CPU (input clk, input botao_ligar_agora, 
-input botao_enviar_agora, input [17:0] instrucao_completa, 
-output reg flag_clear, output reg flag_escrever, output reg [7:0] lcd_data,  
-output reg lcd_rs, output reg lcd_rw, output reg lcd_e) 
+    output reg flag_clear_memoria, // Reset APENAS da memória
+    output reg flag_escrever, // Saída para o banco de registradores
 
-localparam estado_desligado = 4'd0,
-estado_ligado = 4'd1,
-estado_aguardando = 4'd2,
-estado_gravando = 4'd3,
-estado_decodificando = 4'd4,
-estado_executando = 4'd5,
-estado_escrevendo = 4'd6,
-estado_preparando_lcd = 4'd7,
-estado_exibindo = 4'd8;
-
-reg [3:0] estado; 
-
-reg sistema_ligado = 0;
-
-wire flag_ligar;
-wire flag_enviar;
-
-// controle de memória
-reg [3:0] reg_1_endereco;
-reg [3:0] reg_2_endereco;
-reg [3:0] escrita_endereco;
-
-// dados que saem da memória
-wire [15:0] reg_1_conteudo;
-wire [15:0] reg_2_conteudo;
-
-// entradas da ula
-reg [15:0] operador_1;
-reg [15:0] operador_2;
-reg [2:0] codigo_instrucao;
-
-// saída da ula (que irá virar entrada da memória)
-wire [15:0] conteudo_resultado;
-
-// fios do imediato 
-wire sinal = instrucao_completa[6];
-wire [5:0] modulo_imediato_curto = instrucao_completa[5:0];
-wire [15:0] imediato_estendido; 
-
-// tratando a diferença de tamanho do número que extraímos da instrução (6 bits de magnitude) e o tamanho que ele terá quando for guardado na memória (16 bits)
-// além disso, dependendo do sinal, estamos guardando o número no formato de complemento de 2
-assign imediato_estendido = (sinal) ? -{10'd0, modulo_imediato_curto} : {10'd0, modulo_imediato_curto};
-
-memoria banco_memoria(.clk(clk), .enable(flag_escrever), 
-.ativar_clear(flag_clear), .endereco_reg1(reg_1_endereco), 
-.endereco_reg2(reg_2_endereco), .endereco_escrita(escrita_endereco), 
-.conteudo_escrita(conteudo_resultado), .conteudo_reg1(reg_1_conteudo), .conteudo_reg2(reg_2_conteudo));
-
-ula ula(.A(operador_1), .B(operador_2), .opcode(codigo_instrucao), .res_com_sinal(conteudo_resultado))
-
-displayLCD LCD(.clk(clk), .rst(flag_clear), 
-.btn_power(flag_ligar), .btn_send(flag_enviar), 
-.op_selc(codigo_instrucao), .logger(escrita_endereco), 
-result(conteudo_resultado), .lcd_data(lcd_data),
-.lcd_rs(lcd_rs), .lcd_rw(lcd_rw),
-.lcd_e(lcd_e));
-
-module displayLCD (
-
-input wire clk, // Clock do FPGA = 50MHz
-input wire rst, // Reset (Ativo alto)
-
-// Botões de Controle
-input wire btn_power, // Botão Ligar
-input wire btn_send, // Botão Enviar
-
-// Entradas de Dados
-input wire [2:0] op_selc, // Seletor das operações
-input wire [3:0] logger, // Registrador de dados
-input wire signed [15:0] result, // Resultado (sinal + módulo)
-
-// Saídas LCD
-output reg [7:0] lcd_data,  // Informação que podem ser dados ou comandos para o display
-output reg lcd_rs, // Envio de comando = 0, Envio de dados = 1
-output reg lcd_rw, // Write = 0, Read = 1 (só vmaos utilizar escrita)
-output reg lcd_e // Pulso de Enable - quando o display recebe um pulso (0 -> 1 -> 0) ele registra o valor presente
-
+    // Saídas para o LCD
+    output [7:0] lcd_data,
+    output lcd_rs,
+    output lcd_rw,
+    output lcd_e,
+    output lcd_on,
+    output lcd_blon
 );
 
-detector_botao detector_ligar (.clk(clk), .botao_agora(botao_ligar_agora), .flag_botao(flag_ligar));
-detector_botao detector_enviar(.clk(clk), .botao_agora(botao_enviar_agora), .flag_botao(flag_enviar));
+    // --- Hardware DE2-115 ---
+    assign lcd_on = 1'b1;
+    assign lcd_blon = 1'b1;
 
-always@(posedge clk) begin
+    // Opcodes
+    localparam OP_LOAD = 3'b000;
+    localparam OP_ADD = 3'b001;
+    localparam OP_ADDI = 3'b010;
+    localparam OP_SUB = 3'b011;
+    localparam OP_SUBI = 3'b100;
+    localparam OP_MUL = 3'b101;
+    localparam OP_CLEAR = 3'b110;
+    localparam OP_DISPLAY = 3'b111;
 
-    if(flag_ligar) begin
-        sistema_ligado <= ~sistema_ligado; // em qualquer situação, o botão vai inverter o atual estado do sistema
-        // lembrete: essa inversão ocorrerá, somente, ao FINAL do ciclo do clock 
+    // Estados da FSM
+    localparam S_DESLIGADO = 2'd0,
+               S_AGUARDANDO = 2'd1,
+               S_EXECUTANDO = 2'd2;
+
+    reg [1:0] estado;
+    reg sistema_ligado = 0;
+
+    wire flag_ligar, flag_enviar;
+
+    // Registradores LATCH (Seguram o valor p/ LCD não piscar)
+    reg [2:0] lcd_opcode_latched;
+    reg [3:0] lcd_logger_latched;
+    reg [15:0] lcd_result_latched;
+
+    // Dados Internos
+    reg [3:0] reg_1_endereco, reg_2_endereco, escrita_endereco;
+    wire [15:0] reg_1_conteudo, reg_2_conteudo;
+    reg [15:0] operador_1, operador_2;
+    wire [15:0] conteudo_resultado;
+
+    // Decodificação direta das chaves
+    wire [2:0] opcode_chaves = instrucao_completa[17:15];
+
+    // Tratamento do Imediato
+    wire sinal = instrucao_completa[6];
+    wire [5:0] modulo_imediato_curto = instrucao_completa[5:0];
+    wire [15:0] imediato_estendido;
+
+    assign imediato_estendido =
+        (sinal) ? -{10'd0, modulo_imediato_curto} :
+                  {10'd0, modulo_imediato_curto};
+
+    // --- INSTÂNCIAS ---
+
+    // Memória recebe 'flag_clear_memoria' (Instrução) E 'sistema_ligado' (Reset Geral)
+    memoria banco_memoria(
+        .clk(clk),
+        .enable(flag_escrever),
+        .ativar_clear(flag_clear_memoria || ~sistema_ligado), // Limpa se instrução CLR OU se desligado
+        .endereco_reg1(reg_1_endereco),
+        .endereco_reg2(reg_2_endereco),
+        .endereco_escrita(escrita_endereco),
+        .conteudo_escrita(conteudo_resultado),
+        .conteudo_reg1(reg_1_conteudo),
+        .conteudo_reg2(reg_2_conteudo)
+    );
+
+    ula ula(
+        .A(operador_1),
+        .B(operador_2),
+        .opcode(opcode_chaves),
+        .res_com_sinal(conteudo_resultado)
+    );
+
+    displayLCD LCD(
+        .clk(clk),
+        .rst(~sistema_ligado), // O LCD só reseta se o sistema desligar (NÃO na instrução CLR)
+        .btn_send(flag_enviar), // AGORA: pulso debounced vindo do detector/CPU
+        // LCD lê os dados TRAVADOS (Latched), não os fios soltos
+        .op_selc(lcd_opcode_latched),
+        .logger(lcd_logger_latched),
+        .result(lcd_result_latched),
+        .lcd_data(lcd_data),
+        .lcd_rs(lcd_rs),
+        .lcd_rw(lcd_rw),
+        .lcd_e(lcd_e)
+    );
+
+    detector_botao detector_ligar (
+        .clk(clk),
+        .botao_agora(botao_ligar_agora),
+        .flag_botao(flag_ligar)
+    );
+
+    // Usamos um detector para o Enviar para garantir pulso único na lógica da CPU
+    detector_botao detector_enviar(
+        .clk(clk),
+        .botao_agora(botao_enviar_agora),
+        .flag_botao(flag_enviar)
+    );
+
+    // --- LÓGICA DO SISTEMA (LIGAR/DESLIGAR) ---
+    always@(posedge clk) begin
+        if(flag_ligar)
+            sistema_ligado <= ~sistema_ligado;
     end
-end
 
+    // --- FSM PRINCIPAL ---
+    always@(posedge clk) begin
+        if(~sistema_ligado) begin
+            estado <= S_DESLIGADO;
 
-always@(posedge clk) begin
-
-    // primeiro, vamos verificar se o o sistema precisa ser desligado. Só depois disso iremos para a FSM em si
-    
-    if(~sistema_ligado) begin
-        estado <= estado_desligado;
-    end
-
-    else begin
-
-            // agora, sim, o corpo majoritário da lógica da FSM da CPU
-            case(estado)
-
-            estado_desligado: begin // se chegou nesse else, é porque sistema_ligado == 1, logo, o estado do sistema deve ser LIGADO
-                estado <= estado_ligado;
-            end
-
-            estado_ligado: begin
-                estado <= estado_aguardando;
-            end 
-
-            estado_aguardando begin
-                estado <= (flag_enviar) ? estado_decodificando : estado_aguardando;
-            end 
-
-            estado_gravando: begin
-                estado <= estado_decodificando;
-            end 
-
-            estado_decodificando: begin
-                estado <= estado_executando;
-            end
-
-            estado_executando: begin 
-                estado <= estado_escrevendo;
-            end
-
-            estado_escrevendo: begin
-                estado <= estado_preparando_lcd;
-            end
-
-            estado_preparando_lcd: begin
-                estado <= estado_exibindo;
-            end
-
-            estado_exibindo: begin
-                estado <= estado_aguardando;
-            end
-        
-            endcase
-        end 
-    end
-
-
-
-// Lógica das saídas (usamos always@(*) para que o "roteamento" dos fios aconteça instaneamente, sem depender do clock)
-always@(*) begin
-
-    // saídas padrão (para evitar bugs)
-    reg_1_endereco = 0;
-    reg_2_endereco = 0;
-    escrita_endereco = 0;
-    operador_1 = 0;
-    operador_2 = 0;
-    codigo_instrucao = 0;
-    flag_escrever = 0;
-    flag_clear = 0;
-
-case(estado) 
-
-    estado_desligado, estado_ligado: begin
-        flag_clear = 1;
-        flag_escrever = 0;
-    end
-
-    estado_aguardando: begin
-        flag_clear = 0;
-        flag_escrever = 0;
-    end
-
-    estado_gravando: begin
-        flag_clear = 0;
-        flag_escrever = 1;
-
-        // lógica da gravação na memória:
-
-        // operação aritmética com imediato
-        if(instrucao_completa[17:15] != 3'b000) begin 
-            codigo_instrucao = instrucao_completa[17:15];
-            escrita_endereco = instrucao_completa[14:11];
-            reg_1_endereco = instrucao_completa[10:7];
-            reg_2_endereco = 0;
-
-            operador_1 = reg_1_conteudo;
-            operador_2 = imediato_estendido;
-
+            // Zera registradores visuais ao desligar
+            lcd_opcode_latched <= 0;
+            lcd_logger_latched <= 0;
+            lcd_result_latched <= 0;
         end
-
-        // load de memória com valor do imediato
-        else if (instrucao_completa[17:11] == 6'b0000000) begin
-
-            codigo_instrucao = instrucao_completa[13:11];
-            escrita_endereco = instrucao_completa[10:7];
-            operador_1 = 16'd0; // zerando por precaução
-            reg_2_conteudo = imediato_estendido; 
-
-        end
-
-        // operação aritmética com números em registradores
         else begin
-        
-            codigo_instrucao = instrucao_completa[14:12];
-            escrita_endereco = instrucao_completa[11:8];
-            reg_1_endereco = instrucao_completa[7:4];
-            reg_2_endereco = instrucao_completa[3:0];
+            case(estado)
+                S_DESLIGADO: begin
+                    estado <= S_AGUARDANDO;
+                end
 
-            operador_1 = reg_1_conteudo;
-            operador_2 = reg_2_conteudo;
+                S_AGUARDANDO: begin
+                    // Se apertou enviar, executa e trava os dados
+                    if (flag_enviar) begin
+                        // 1. LATCH: Salva o estado atual das chaves para o LCD
+                        lcd_opcode_latched <= opcode_chaves;
+                        lcd_logger_latched <= escrita_endereco; // Definido na lógica combinacional abaixo
 
+                        // 2. Define o resultado visual
+                        if (opcode_chaves == OP_DISPLAY)
+                            lcd_result_latched <= operador_1; // Valor lido
+                        else
+                            lcd_result_latched <= conteudo_resultado; // Resultado ULA
+
+                        estado <= S_EXECUTANDO;
+                    end
+                end
+
+                S_EXECUTANDO: begin
+                    // Um ciclo para garantir escrita na memória, depois volta
+                    estado <= S_AGUARDANDO;
+                end
+            endcase
+        end
     end
-    end 
 
-endcase
+    // --- LÓGICA COMBINACIONAL (PREPARAÇÃO DE DADOS) ---
+    // Isso define o que entra na ULA e Memória antes mesmo do clock bater
+    always@(*) begin
+        // Defaults
+        flag_escrever = 0;
+        flag_clear_memoria = 0;
+        reg_1_endereco = 0;
+        reg_2_endereco = 0;
+        escrita_endereco = 0;
+        operador_1 = 0;
+        operador_2 = 0;
 
-end
+        // Só processa se estiver ligado e nos estados principais
+        if (estado == S_AGUARDANDO || estado == S_EXECUTANDO) begin
+
+            // Ativa escrita/clear apenas no ciclo exato de execução
+            if (estado == S_EXECUTANDO) begin
+                if (opcode_chaves == OP_CLEAR)
+                    flag_clear_memoria = 1;
+                else if (opcode_chaves != OP_DISPLAY)
+                    flag_escrever = 1;
+            end
+
+            // Configuração dos caminhos de dados baseada nas chaves
+            case (opcode_chaves)
+                OP_LOAD: begin
+                    // Load Imediato
+                    escrita_endereco = instrucao_completa[14:11];
+                    operador_1 = 16'd0;
+                    operador_2 = imediato_estendido;
+                end
+
+                OP_ADD,
+                OP_SUB: begin
+                    // Reg x Reg
+                    escrita_endereco = instrucao_completa[14:11];
+                    reg_1_endereco = instrucao_completa[10:7];
+                    reg_2_endereco = instrucao_completa[3:0];
+                    operador_1 = reg_1_conteudo;
+                    operador_2 = reg_2_conteudo;
+                end
+
+                OP_ADDI,
+                OP_SUBI,
+                OP_MUL: begin
+                    // Reg x Imm
+                    escrita_endereco = instrucao_completa[14:11];
+                    reg_1_endereco = instrucao_completa[10:7];
+                    operador_1 = reg_1_conteudo;
+                    operador_2 = imediato_estendido;
+                end
+
+                OP_DISPLAY: begin
+                    // Apenas ler
+                    reg_1_endereco = instrucao_completa[14:11];
+                    escrita_endereco = instrucao_completa[14:11]; // Para mostrar [Reg] no LCD
+                    operador_1 = reg_1_conteudo;
+                end
+
+                default: begin
+                    // NOP / segurança
+                end
+            endcase
+        end
+    end
 
 endmodule
