@@ -312,5 +312,5 @@ module displayLCD (
             end
         endcase
     end
-
 endmodule
+	
