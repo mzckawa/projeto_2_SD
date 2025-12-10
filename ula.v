@@ -1,30 +1,43 @@
-module ula(input [7:0] A, input [7:0] B, input [2:0] opcode, output reg [6:0] res_com_sinal)
-    
+module ula(
+    input [15:0] A, // 16 bits para casar com registradores
+    input [15:0] B,
+    input [2:0] opcode,
+    output reg signed [15:0] res_com_sinal // 16 bits
+);
+
+    // Opcodes baseados no PDF
+    localparam LOAD = 3'b000;
     localparam ADD = 3'b001;
     localparam ADDI = 3'b010;
     localparam SUB = 3'b011;
     localparam SUBI = 3'b100;
     localparam MUL = 3'b101;
-    
-    always@(*) // executa se alguns dos inputs do módulo mudar (A, B ou opcode)
+    localparam CLR = 3'b110;
+    localparam DISP = 3'b111;
 
-    begin 
-    res_com_sinal = 8'd0;
-    if (opcode == ADD || opcode == ADDI)
-    begin
-    res_com_sinal = A + B;
-    end 
-    
-    else if (opcode == SUB || opcode == SUBI)
-    begin
-    res_com_sinal = A - B;
-    end 
+    always@(*) begin
+        res_com_sinal = 16'd0;
+        case(opcode)
+            // Load: O valor imediato (B) passa direto
+            LOAD: res_com_sinal = B;
 
-    else if (opcode == MUL)
-    begin
-    res_com_sinal = A * B;
-    end 
+            // Aritmética
+            ADD,
+            ADDI: res_com_sinal = A + B;
+
+            SUB,
+            SUBI: res_com_sinal = A - B;
+
+            MUL: res_com_sinal = A * B;
+
+            // Clear: Retorna 0 (tratado na CPU também, mas aqui garante zero)
+            CLR: res_com_sinal = 16'd0;
+
+            // Display: Passa o valor do registrador (A)
+            DISP: res_com_sinal = A;
+
+            default: res_com_sinal = 16'd0;
+        endcase
     end
 
 endmodule
-
