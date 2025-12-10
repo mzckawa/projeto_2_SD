@@ -2,7 +2,8 @@
 
 module CPU (input clk, input botao_ligar_agora, 
 input botao_enviar_agora, input [17:0] instrucao_completa, 
-output reg flag_clear, output reg flag_escrever) 
+output reg flag_clear, output reg flag_escrever, output reg [7:0] lcd_data,  
+output reg lcd_rs, output reg lcd_rw, output reg lcd_e) 
 
 localparam estado_desligado = 4'd0,
 estado_ligado = 4'd1,
@@ -52,7 +53,36 @@ memoria banco_memoria(.clk(clk), .enable(flag_escrever),
 .endereco_reg2(reg_2_endereco), .endereco_escrita(escrita_endereco), 
 .conteudo_escrita(conteudo_resultado), .conteudo_reg1(reg_1_conteudo), .conteudo_reg2(reg_2_conteudo));
 
-ula ula(.A(operador_1), .B(operador_2), .opcode(codigo_instrucoa), .res_com_sinal(conteudo_resultado))
+ula ula(.A(operador_1), .B(operador_2), .opcode(codigo_instrucao), .res_com_sinal(conteudo_resultado))
+
+displayLCD LCD(.clk(clk), .rst(flag_clear), 
+.btn_power(flag_ligar), .btn_send(flag_enviar), 
+.op_selc(codigo_instrucao), .logger(escrita_endereco), 
+result(conteudo_resultado), .lcd_data(lcd_data),
+.lcd_rs(lcd_rs), .lcd_rw(lcd_rw),
+.lcd_e(lcd_e));
+
+module displayLCD (
+
+input wire clk, // Clock do FPGA = 50MHz
+input wire rst, // Reset (Ativo alto)
+
+// Botões de Controle
+input wire btn_power, // Botão Ligar
+input wire btn_send, // Botão Enviar
+
+// Entradas de Dados
+input wire [2:0] op_selc, // Seletor das operações
+input wire [3:0] logger, // Registrador de dados
+input wire signed [15:0] result, // Resultado (sinal + módulo)
+
+// Saídas LCD
+output reg [7:0] lcd_data,  // Informação que podem ser dados ou comandos para o display
+output reg lcd_rs, // Envio de comando = 0, Envio de dados = 1
+output reg lcd_rw, // Write = 0, Read = 1 (só vmaos utilizar escrita)
+output reg lcd_e // Pulso de Enable - quando o display recebe um pulso (0 -> 1 -> 0) ele registra o valor presente
+
+);
 
 detector_botao detector_ligar (.clk(clk), .botao_agora(botao_ligar_agora), .flag_botao(flag_ligar));
 detector_botao detector_enviar(.clk(clk), .botao_agora(botao_enviar_agora), .flag_botao(flag_enviar));
@@ -151,7 +181,7 @@ case(estado)
         flag_escrever = 1;
 
         // lógica da gravação na memória:
-        
+
         // operação aritmética com imediato
         if(instrucao_completa[17:15] != 3'b000) begin 
             codigo_instrucao = instrucao_completa[17:15];
