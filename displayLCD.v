@@ -73,12 +73,12 @@ module displayLCD (
         endcase
 
         // Logger [Rxxx]
-        message[9] = "[";
-        message[10] = (reg_logger[3]) ? "1" : "0";
-        message[11] = (reg_logger[2]) ? "1" : "0";
-        message[12] = (reg_logger[1]) ? "1" : "0";
-        message[13] = (reg_logger[0]) ? "1" : "0";
-        message[14] = "]";
+        message[10] = "[";
+        message[11] = (reg_logger[3]) ? "1" : "0";
+        message[12] = (reg_logger[2]) ? "1" : "0";
+        message[13] = (reg_logger[1]) ? "1" : "0";
+        message[14] = (reg_logger[0]) ? "1" : "0";
+        message[15] = "]";
 
         // Resultado na direita
         message[26] = (reg_result < 0) ? "-" : "+";
