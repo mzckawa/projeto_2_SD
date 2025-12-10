@@ -1,19 +1,37 @@
-module detector_botao(input clk, input botao_agora, output reg flag_botao)
+module detector_botao(
+    input clk,
+    input botao_agora,
+    output reg flag_botao
+);
+    // Debounce simples: O botão precisa ficar estável por ~10ms
+    // Clock 50MHz -> 10ms = 500.000 ciclos
+    reg [19:0] contador = 20'd0;
+    reg estado_estavel = 1'b0;
+    reg estado_anterior = 1'b0;
 
-reg botao_anterior = 1; // atribuindo 1 (solto) no início para evitar ruído
+    always @(posedge clk) begin
+        // Se o botão mudou em relação ao estado estável, conta
+        if (botao_agora != estado_estavel) begin
+            if (contador < 20'd500_000) begin
+                contador <= contador + 1;
+            end
+            else begin
+                // Se contou até o fim, valida o novo estado
+                estado_estavel <= botao_agora;
+                contador <= 0;
+            end
+        end
+        else begin
+            contador <= 0;
+        end
 
-always@(posedge clk) begin
+        // Detector de Borda de Subida no sinal LIMPO (estavel)
+        estado_anterior <= estado_estavel;
 
-botao_anterior <= botao_agora;
+        if (!estado_anterior && estado_estavel)
+            flag_botao <= 1; // Pulso de 1 ciclo
+        else
+            flag_botao <= 0;
+    end
 
-// como os botões da placa são low level, precisamos detectar o momento em que  "botao_anterior" é 0 e "botao_agora" é 1
-if(~botao_anterior && botao_agora) begin
-    flag_botao <= 1;
-end
-
-else begin
-flag_botao <= 0;
-end
-
-end 
 endmodule
