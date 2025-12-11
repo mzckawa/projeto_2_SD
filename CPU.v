@@ -13,12 +13,10 @@ module CPU (
     output lcd_rw,
     output lcd_e,
     output lcd_on,
-    output lcd_blon
 );
 
     // --- Hardware DE2-115 ---
     assign lcd_on = 1'b1;
-    assign lcd_blon = 1'b1;
 
     // Opcodes
     localparam OP_LOAD = 3'b000;
