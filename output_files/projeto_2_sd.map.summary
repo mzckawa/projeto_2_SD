@@ -1,0 +1,14 @@
+Analysis & Synthesis Status : Successful - Thu Dec 11 09:52:32 2025
+Quartus Prime Version : 21.1.1 Build 850 06/23/2022 SJ Lite Edition
+Revision Name : projeto_2_sd
+Top-level Entity Name : CPU
+Family : Cyclone IV E
+Total logic elements : 1,203
+    Total combinational functions : 936
+    Dedicated logic registers : 406
+Total registers : 406
+Total pins : 35
+Total virtual pins : 0
+Total memory bits : 0
+Embedded Multiplier 9-bit elements : 2
+Total PLLs : 0

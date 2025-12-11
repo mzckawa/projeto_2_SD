@@ -1,0 +1,22 @@
+
+State Machine - |CPU|estado
+Name estado.S_DESLIGADO estado.S_EXECUTANDO estado.S_AGUARDANDO 
+estado.S_DESLIGADO 0 0 0 
+estado.S_AGUARDANDO 1 0 1 
+estado.S_EXECUTANDO 1 1 0 
+
+State Machine - |CPU|displayLCD:LCD|state
+Name state.S_WAIT_RELEASE state.S_DATA_WAIT state.S_DATA_PULSE state.S_DATA_WRITE state.S_CMD_WAIT state.S_CMD_PULSE state.S_CMD_ADDR state.S_SYNC_CPU state.S_IDLE state.S_INIT_WAIT state.S_INIT_PULSE state.S_INIT_START state.S_OFF 
+state.S_OFF 0 0 0 0 0 0 0 0 0 0 0 0 0 
+state.S_INIT_START 0 0 0 0 0 0 0 0 0 0 0 1 1 
+state.S_INIT_PULSE 0 0 0 0 0 0 0 0 0 0 1 0 1 
+state.S_INIT_WAIT 0 0 0 0 0 0 0 0 0 1 0 0 1 
+state.S_IDLE 0 0 0 0 0 0 0 0 1 0 0 0 1 
+state.S_SYNC_CPU 0 0 0 0 0 0 0 1 0 0 0 0 1 
+state.S_CMD_ADDR 0 0 0 0 0 0 1 0 0 0 0 0 1 
+state.S_CMD_PULSE 0 0 0 0 0 1 0 0 0 0 0 0 1 
+state.S_CMD_WAIT 0 0 0 0 1 0 0 0 0 0 0 0 1 
+state.S_DATA_WRITE 0 0 0 1 0 0 0 0 0 0 0 0 1 
+state.S_DATA_PULSE 0 0 1 0 0 0 0 0 0 0 0 0 1 
+state.S_DATA_WAIT 0 1 0 0 0 0 0 0 0 0 0 0 1 
+state.S_WAIT_RELEASE 1 0 0 0 0 0 0 0 0 0 0 0 1 

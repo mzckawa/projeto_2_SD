@@ -12,11 +12,13 @@ module CPU (
     output lcd_rs,
     output lcd_rw,
     output lcd_e,
-    output lcd_on
+    output lcd_on,
+    output lcd_blon
 );
 
     // --- Hardware DE2-115 ---
     assign lcd_on = 1'b1;
+    assign lcd_blon = 1'b1;
 
     // Opcodes
     localparam OP_LOAD = 3'b000;
@@ -194,7 +196,7 @@ module CPU (
                     // Reg x Reg
                     escrita_endereco = instrucao_completa[14:11];
                     reg_1_endereco = instrucao_completa[10:7];
-                    reg_2_endereco = instrucao_completa[6:3];
+                    reg_2_endereco = instrucao_completa[3:0];
                     operador_1 = reg_1_conteudo;
                     operador_2 = reg_2_conteudo;
                 end

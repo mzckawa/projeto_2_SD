@@ -1,0 +1,141 @@
+{
+	"partitions" : [
+		{
+			"name" : "Top",
+			"pins" : [
+				{
+					"name" : "flag_clear_memoria",
+					"strict" : false
+				},
+				{
+					"name" : "flag_escrever",
+					"strict" : false
+				},
+				{
+					"name" : "lcd_data[0]",
+					"strict" : false
+				},
+				{
+					"name" : "lcd_data[1]",
+					"strict" : false
+				},
+				{
+					"name" : "lcd_data[2]",
+					"strict" : false
+				},
+				{
+					"name" : "lcd_data[3]",
+					"strict" : false
+				},
+				{
+					"name" : "lcd_data[4]",
+					"strict" : false
+				},
+				{
+					"name" : "lcd_data[5]",
+					"strict" : false
+				},
+				{
+					"name" : "lcd_data[6]",
+					"strict" : false
+				},
+				{
+					"name" : "lcd_data[7]",
+					"strict" : false
+				},
+				{
+					"name" : "lcd_rs",
+					"strict" : false
+				},
+				{
+					"name" : "lcd_e",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[15]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[16]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[17]",
+					"strict" : false
+				},
+				{
+					"name" : "clk",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[13]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[9]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[14]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[10]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[11]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[7]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[12]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[8]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[6]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[0]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[5]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[3]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[4]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[2]",
+					"strict" : false
+				},
+				{
+					"name" : "instrucao_completa[1]",
+					"strict" : false
+				},
+				{
+					"name" : "botao_enviar_agora",
+					"strict" : false
+				},
+				{
+					"name" : "botao_ligar_agora",
+					"strict" : false
+				}
+			]
+		}
+	]
+}
